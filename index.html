@@ -3,14 +3,377 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta http-equiv="refresh" content="0; url=./Construction3DBuilder.html">
-  <title>Opening Construction 3D Builder</title>
-  <script>
-    const target = './Construction3DBuilder.html' + window.location.search + window.location.hash;
-    window.location.replace(target);
-  </script>
+  <meta name="theme-color" content="#1f2933">
+  <title>Construction 3D Builder</title>
+  <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
-  <p>Opening <a href="./Construction3DBuilder.html">Construction 3D Builder</a>…</p>
+  <header class="app-head">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true">C3D</div>
+      <div>
+        <strong>Construction 3D Builder</strong>
+        <small>Real materials · solid cuts · framing · collision-aware layout</small>
+      </div>
+    </div>
+
+    <nav class="menu-bar" aria-label="Application menu">
+      <details class="app-menu">
+        <summary>Project</summary>
+        <div class="menu-popover">
+          <button id="objectsButton" type="button">Project objects</button>
+          <button id="clearSelectionMenu" type="button">Clear selection</button>
+          <button id="clearProject" type="button" class="danger-text">Clear project…</button>
+        </div>
+      </details>
+
+      <details class="app-menu">
+        <summary>Add</summary>
+        <div class="menu-popover">
+          <button id="materialsButton" type="button">Material & component library</button>
+        </div>
+      </details>
+
+      <details class="app-menu">
+        <summary>Edit</summary>
+        <div class="menu-popover">
+          <button id="multiSelectMode" type="button">Multi-select: Off</button>
+          <button id="cutButton" type="button" disabled>Cut / shape selected part</button>
+          <button id="trimButton" type="button" disabled>Trim selected parts to plane</button>
+          <hr>
+          <button id="duplicate" type="button" disabled>Duplicate selection</button>
+          <button id="deletePart" type="button" disabled>Delete selection</button>
+        </div>
+      </details>
+
+      <details class="app-menu">
+        <summary>Build</summary>
+        <div class="menu-popover">
+          <button id="wallButton" type="button">Frame a wall</button>
+        </div>
+      </details>
+
+      <details class="app-menu">
+        <summary>View</summary>
+        <div class="menu-popover">
+          <button id="topView" type="button">Top view</button>
+          <button id="frontView" type="button">Front view</button>
+          <button id="isoView" type="button">Isometric view</button>
+          <button id="frameAll" type="button">Frame entire project</button>
+        </div>
+      </details>
+
+      <button id="settingsButton" class="menu-button" type="button">Settings</button>
+    </nav>
+  </header>
+
+  <div class="context-bar">
+    <div class="mode-switch" aria-label="Transform mode">
+      <button id="moveMode" class="active" type="button">Move</button>
+      <button id="rotateMode" type="button">Rotate</button>
+    </div>
+    <div id="selectionStatus" class="selection-status">Nothing selected</div>
+    <button id="clearSelectionButton" class="quiet-button" type="button" disabled>Clear selection</button>
+  </div>
+
+  <main class="workspace">
+    <canvas id="view" aria-label="Construction 3D Builder workspace"></canvas>
+    <div class="hint">Tap a part to select · Shift/Ctrl-click, or turn on Multi-select, to select several · one finger/left drag orbits · two fingers pinch/rotate view</div>
+
+    <aside id="materialsPanel" class="panel library-panel hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Material & Component Library</h1>
+          <small>Everything you can place starts here.</small>
+        </div>
+        <button id="closeMaterials" type="button">Close</button>
+      </div>
+
+      <label>Category
+        <select id="materialFamily">
+          <option value="lumber">Dimensional lumber</option>
+          <option value="sheet">Sheet goods</option>
+          <option value="masonry">Masonry</option>
+          <option value="smoker">Smoker components</option>
+        </select>
+      </label>
+
+      <label>Material / component
+        <select id="materialItem"></select>
+      </label>
+
+      <div id="lumberOptions">
+        <label>Stock length
+          <select id="stockLength"></select>
+        </label>
+        <label>Initial finished length (inches)
+          <input id="cutLength" type="number" min="0.125" step="0.125" inputmode="decimal">
+        </label>
+      </div>
+
+      <div id="sheetOptions" hidden>
+        <label>Stock sheet
+          <input value="48 × 96 in (4 × 8 ft)" disabled>
+        </label>
+        <div class="two-col">
+          <label>Finished length
+            <input id="sheetCutLength" type="number" min="0.125" max="96" step="0.125" value="96">
+          </label>
+          <label>Finished width
+            <input id="sheetCutWidth" type="number" min="0.125" max="48" step="0.125" value="48">
+          </label>
+        </div>
+        <label>Thickness
+          <select id="sheetThickness"></select>
+        </label>
+      </div>
+
+      <div id="materialPreview" class="info-box"></div>
+      <button id="addMaterial" class="primary wide" type="button">Add to project</button>
+    </aside>
+
+    <aside id="cutPanel" class="panel cut-panel hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Cut / Shape Part</h1>
+          <small>Edits one selected stock piece in place.</small>
+        </div>
+        <button id="closeCut" type="button">Close</button>
+      </div>
+      <div id="cutSelectionInfo" class="info-box">Select one lumber or sheet piece first.</div>
+
+      <fieldset>
+        <legend>Finished size</legend>
+        <label>Length (inches)
+          <input id="editCutLength" type="number" min="0.125" step="0.125">
+        </label>
+        <label id="editWidthLabel">Width (inches)
+          <input id="editCutWidth" type="number" min="0.125" step="0.125">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>End A cut</legend>
+        <div class="two-col">
+          <label>Miter angle
+            <input id="startMiter" type="number" min="-60" max="60" step="1" value="0">
+          </label>
+          <label>Bevel angle
+            <input id="startBevel" type="number" min="-60" max="60" step="1" value="0">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>End B cut</legend>
+        <div class="two-col">
+          <label>Miter angle
+            <input id="endMiter" type="number" min="-60" max="60" step="1" value="0">
+          </label>
+          <label>Bevel angle
+            <input id="endBevel" type="number" min="-60" max="60" step="1" value="0">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rectangular notch / pocket</legend>
+        <label>Cut from face
+          <select id="notchFace">
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+            <option value="front">Front side</option>
+            <option value="back">Back side</option>
+          </select>
+        </label>
+        <div class="two-col">
+          <label>Start from End A
+            <input id="notchStart" type="number" min="0" step="0.125" value="12">
+          </label>
+          <label>Notch length
+            <input id="notchLength" type="number" min="0.125" step="0.125" value="4">
+          </label>
+        </div>
+        <div class="two-col">
+          <label>Across-face offset
+            <input id="notchOffset" type="number" min="0" step="0.125" value="0">
+          </label>
+          <label>Across-face width
+            <input id="notchSpan" type="number" min="0.125" step="0.125">
+          </label>
+        </div>
+        <label>Depth into material
+          <input id="notchDepth" type="number" min="0.125" step="0.125">
+        </label>
+        <button id="addNotch" type="button">Add notch to cut list</button>
+      </fieldset>
+
+      <div id="cutOperations" class="operation-list"></div>
+      <div class="button-row">
+        <button id="clearCuts" type="button">Reset all cuts</button>
+        <button id="applyCuts" class="primary" type="button">Apply changes</button>
+      </div>
+    </aside>
+
+    <aside id="trimPanel" class="panel trim-panel hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Trim to Plane</h1>
+          <small>One plane can cut every selected stock piece.</small>
+        </div>
+        <button id="closeTrim" type="button">Close</button>
+      </div>
+
+      <div id="trimSelectionInfo" class="info-box">Select two or more lumber/sheet pieces, or a single piece, then define the cut line.</div>
+      <p class="muted">The line is defined in the project’s front view using X and height (Z). The cutting plane extends through the project in the Y direction.</p>
+
+      <fieldset>
+        <legend>Plane line in front view</legend>
+        <div class="two-col">
+          <label>Point 1 — X
+            <input id="trimX1" type="number" step="0.125" value="0">
+          </label>
+          <label>Point 1 — height Z
+            <input id="trimZ1" type="number" step="0.125" value="96">
+          </label>
+        </div>
+        <div class="two-col">
+          <label>Point 2 — X
+            <input id="trimX2" type="number" step="0.125" value="96">
+          </label>
+          <label>Point 2 — height Z
+            <input id="trimZ2" type="number" step="0.125" value="96">
+          </label>
+        </div>
+        <label>Keep material
+          <select id="trimKeep">
+            <option value="below">Below the line</option>
+            <option value="above">Above the line</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <div class="button-row">
+        <button id="trimFromSelection" type="button">Fit line to selection top</button>
+        <button id="frontViewFromTrim" type="button">Switch to front view</button>
+      </div>
+      <div id="trimPreviewStatus" class="info-box">The translucent preview plane shows exactly where the cut will occur.</div>
+      <button id="applyTrim" class="primary wide" type="button">Trim selected stock pieces</button>
+    </aside>
+
+    <aside id="wallPanel" class="panel wall-panel hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Frame Wall</h1>
+          <small>Creates individual editable lumber members.</small>
+        </div>
+        <button id="closeWall" type="button">Close</button>
+      </div>
+      <p class="muted">On-center layout is measured from the left end. Header size is a modeling input only; this tool does not perform structural engineering.</p>
+
+      <div class="two-col">
+        <label>Wall length (in)
+          <input id="wallLength" type="number" min="12" step="0.125" value="96">
+        </label>
+        <label>Stud spacing O.C. (in)
+          <input id="wallSpacing" type="number" min="4" step="0.125" value="16">
+        </label>
+      </div>
+      <div class="two-col">
+        <label>Left wall height (in)
+          <input id="wallLeftHeight" type="number" min="12" step="0.125" value="96">
+        </label>
+        <label>Right wall height (in)
+          <input id="wallRightHeight" type="number" min="12" step="0.125" value="96">
+        </label>
+      </div>
+      <label>Stud / plate material
+        <select id="wallStudSize">
+          <option value="2x4">2 × 4</option>
+          <option value="2x6">2 × 6</option>
+        </select>
+      </label>
+      <label class="check-row"><input id="wallDoubleTop" type="checkbox" checked> Double top plate</label>
+      <label class="check-row"><input id="wallLeftCorner" type="checkbox" checked> Left 3-stud corner pack</label>
+      <label class="check-row"><input id="wallRightCorner" type="checkbox" checked> Right 3-stud corner pack</label>
+
+      <fieldset>
+        <legend>Opening</legend>
+        <label>Opening type
+          <select id="openingType">
+            <option value="none">None</option>
+            <option value="door">Door</option>
+            <option value="window">Window</option>
+          </select>
+        </label>
+        <div id="openingOptions" hidden>
+          <div class="two-col">
+            <label>Left edge from wall end
+              <input id="openingOffset" type="number" min="0" step="0.125" value="24">
+            </label>
+            <label>Rough width
+              <input id="openingWidth" type="number" min="12" step="0.125" value="36">
+            </label>
+          </div>
+          <label>Rough opening height
+            <input id="openingHeight" type="number" min="24" step="0.125" value="82.5">
+          </label>
+          <label id="sillHeightLabel" hidden>Window sill height
+            <input id="openingSillHeight" type="number" min="0" step="0.125" value="36">
+          </label>
+          <label>Header board
+            <select id="openingHeader">
+              <option value="2x6">2 × 6</option>
+              <option value="2x8">2 × 8</option>
+              <option value="2x10">2 × 10</option>
+              <option value="2x12">2 × 12</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <div id="wallPreview" class="info-box"></div>
+      <button id="generateWall" class="primary wide" type="button">Generate framed wall</button>
+    </aside>
+
+    <aside id="objectsPanel" class="panel objects-panel hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Project Objects</h1>
+          <small><span id="objectCount">0</span> placed objects</small>
+        </div>
+        <button id="closeObjects" type="button">Close</button>
+      </div>
+      <label>Find object
+        <input id="objectSearch" type="search" placeholder="Search material, role, or component">
+      </label>
+      <div id="projectObjectList" class="object-list"></div>
+    </aside>
+
+    <aside id="settingsPanel" class="panel settings hidden">
+      <div class="panel-head">
+        <div>
+          <h1>Settings</h1>
+          <small>Editor behavior and collision.</small>
+        </div>
+        <button id="closeSettings" type="button">Close</button>
+      </div>
+      <label class="check-row"><input id="translationSnap" type="checkbox" checked> 0.5-inch translation snap</label>
+      <label>Rotation snap
+        <select id="rotationSnap">
+          <option value="1">1°</option>
+          <option value="5">5°</option>
+          <option value="15" selected>15°</option>
+          <option value="45">45°</option>
+          <option value="90">90°</option>
+        </select>
+      </label>
+      <label class="check-row"><input id="collisionEnabled" type="checkbox" checked> Solid collision</label>
+      <label class="check-row"><input id="groundCollision" type="checkbox" checked> Ground collision at Z = 0</label>
+      <div id="selectionInfo" class="info-box">Nothing selected.</div>
+    </aside>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
