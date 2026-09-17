@@ -3,6 +3,7 @@ import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import { MeshBVH } from 'three-mesh-bvh';
 
 const evaluator = new Evaluator();
+evaluator.attributes = ['position', 'normal'];
 evaluator.useGroups = false;
 evaluator.consolidateGroups = false;
 
@@ -75,7 +76,7 @@ function notchCutterGeometry(notch, length, width, thickness) {
   const x = -length / 2 + start + notchLength / 2;
   let y = 0;
   let z = 0;
-  let sx = notchLength + EPS * 2;
+  const sx = notchLength + EPS * 2;
   let sy;
   let sz;
 
