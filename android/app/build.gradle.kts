@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.zaksecurity.construction3dbuilder"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.zaksecurity.construction3dbuilder"
