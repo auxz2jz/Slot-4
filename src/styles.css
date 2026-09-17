@@ -6,15 +6,26 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: #e7e9ec; }
-
 button, select, input { font: inherit; }
+
+.app-head {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #c6cbd1;
+  background: #20252b;
+  color: #fff;
+}
+.app-head strong { display: block; font-size: 17px; }
+.app-head small { display: block; margin-top: 2px; color: #cbd2da; font-size: 11px; }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  padding: 10px;
+  padding: 9px 10px;
   background: #f4f5f7;
   border-bottom: 1px solid #c6cbd1;
 }
@@ -35,15 +46,14 @@ button, select, input { font: inherit; }
   outline: 2px solid #2f6fd6;
   background: #dce8fb;
 }
-
 button.primary {
   background: #2f6fd6;
   color: #fff;
   border-color: #2458a9;
   font-weight: 650;
 }
-
 button.wide { width: 100%; margin-top: 14px; }
+button:disabled { opacity: 0.55; }
 
 .separator { width: 1px; height: 30px; background: #c6cbd1; }
 .workspace { position: relative; min-height: 640px; background: #d9dde2; }
@@ -51,7 +61,7 @@ button.wide { width: 100%; margin-top: 14px; }
 #view {
   display: block;
   width: 100%;
-  height: calc(100vh - 125px);
+  height: calc(100vh - 160px);
   min-height: 560px;
   touch-action: none;
 }
@@ -66,13 +76,14 @@ button.wide { width: 100%; margin-top: 14px; }
   border-radius: 8px;
   background: #fffffff0;
   font-size: 12px;
+  pointer-events: none;
 }
 
 .panel {
   position: absolute;
   z-index: 20;
   top: 8px;
-  width: min(390px, calc(100% - 16px));
+  width: min(410px, calc(100% - 16px));
   max-height: calc(100% - 16px);
   overflow: auto;
   padding: 12px;
@@ -80,39 +91,87 @@ button.wide { width: 100%; margin-top: 14px; }
   border-radius: 12px;
   background: #f4f5f7f5;
   box-shadow: 0 6px 24px #0003;
+  backdrop-filter: blur(6px);
 }
-
 .panel.hidden { display: none; }
 .settings { right: 8px; }
-.materials { left: 8px; }
+.materials, .cut-panel, .wall-panel { left: 8px; }
+.cut-panel, .wall-panel { width: min(460px, calc(100% - 16px)); }
 
 .panel-head {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   align-items: center;
+  position: sticky;
+  top: -12px;
+  z-index: 2;
+  margin: -12px -12px 0;
+  padding: 12px;
+  background: #f4f5f7fa;
+  border-bottom: 1px solid #d2d6db;
 }
-
 .panel h1 { font-size: 18px; margin: 0; }
 .panel p { line-height: 1.4; font-size: 13px; }
-.panel label { display: block; margin-top: 14px; font-weight: 600; }
+.panel .muted { color: #565e66; }
+.panel label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; }
 .panel label > select,
-.panel label > input { width: 100%; margin-top: 6px; font-weight: 400; }
+.panel label > input { width: 100%; margin-top: 5px; font-weight: 400; }
 .panel input:disabled { background: #eceff2; color: #535960; }
 
+fieldset {
+  margin: 14px 0 0;
+  padding: 10px;
+  border: 1px solid #c6cbd1;
+  border-radius: 9px;
+  background: #ffffff80;
+}
+legend { padding: 0 6px; font-weight: 700; font-size: 13px; }
+fieldset label:first-of-type { margin-top: 4px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .info-box {
-  margin-top: 16px;
+  margin-top: 14px;
   padding: 10px;
   border: 1px solid #c6cbd1;
   border-radius: 8px;
   background: #fff;
   line-height: 1.4;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
+.operation-list {
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px dashed #adb5be;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.operation-list:empty { display: none; }
+.operation-item { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eceff2; }
+.operation-item:last-child { border-bottom: 0; }
+.operation-item button { min-height: 30px; padding: 3px 7px; font-size: 11px; }
+
 @media (max-width: 700px) {
-  #view { height: 640px; min-height: 640px; }
+  .app-head { min-height: 48px; }
+  #view { height: 650px; min-height: 650px; }
   .toolbar { gap: 6px; }
-  .toolbar button { padding: 7px 9px; }
+  .toolbar button { min-height: 40px; padding: 7px 9px; }
   .panel { position: fixed; top: 8px; max-height: calc(100vh - 16px); }
+  .two-col { grid-template-columns: 1fr; gap: 0; }
+  .button-row { grid-template-columns: 1fr; }
 }
