@@ -25,7 +25,7 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null || true
       - name: Install Android 17 compile platform
-        run: /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager 'platforms;android-37' 'build-tools;36.0.0' 'platform-tools' --channel=3
+        run: /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'platform-tools' --channel=3
       - name: Set up Gradle 9.6
         uses: gradle/actions/setup-gradle@v4
         with:
