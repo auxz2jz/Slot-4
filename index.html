@@ -12,6 +12,7 @@
     <button id="addCmu">+ Gray cinder block</button>
     <button id="addFirebrick">+ Yellow firebrick</button>
     <button id="addLid">+ Lid</button>
+    <button id="materialsButton">+ Construction materials</button>
     <span class="separator"></span>
     <button id="moveMode" class="active">Move</button>
     <button id="rotateMode">Rotate</button>
@@ -29,8 +30,45 @@
     <canvas id="view" aria-label="3D smoker builder"></canvas>
     <div class="hint">1 finger / left drag = orbit · 2 fingers = orbit + pinch zoom · tap a part = select</div>
 
-    <aside id="settingsPanel" class="settings hidden">
-      <div class="settings-head">
+    <aside id="materialsPanel" class="panel materials hidden">
+      <div class="panel-head">
+        <h1>Construction materials</h1>
+        <button id="closeMaterials">Close</button>
+      </div>
+      <p>Place standard building materials at their real finished dimensions. Lumber keeps both its stock length and cut length so future takeoff/leftover tools can reuse the same project data.</p>
+
+      <label>Material family
+        <select id="materialFamily"></select>
+      </label>
+
+      <label>Size / material
+        <select id="materialItem"></select>
+      </label>
+
+      <div id="lumberOptions">
+        <label>Stock length
+          <select id="stockLength"></select>
+        </label>
+        <label>Cut length (inches)
+          <input id="cutLength" type="number" min="0.125" step="0.125" inputmode="decimal">
+        </label>
+      </div>
+
+      <div id="sheetOptions" hidden>
+        <label>Sheet size
+          <input value="48 × 96 in (4 × 8 ft)" disabled>
+        </label>
+        <label>Thickness
+          <select id="sheetThickness"></select>
+        </label>
+      </div>
+
+      <div id="materialPreview" class="info-box"></div>
+      <button id="addMaterial" class="primary wide">Add material to model</button>
+    </aside>
+
+    <aside id="settingsPanel" class="panel settings hidden">
+      <div class="panel-head">
         <h1>Builder settings</h1>
         <button id="closeSettings">Close</button>
       </div>
@@ -45,7 +83,7 @@
           <option value="90">90°</option>
         </select>
       </label>
-      <div id="selectionInfo">Nothing selected.</div>
+      <div id="selectionInfo" class="info-box">Nothing selected.</div>
     </aside>
   </main>
 
