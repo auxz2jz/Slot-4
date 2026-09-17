@@ -26,6 +26,26 @@ insert.position.z = 0.5;
 insert.updateMatrixWorld(true);
 if (!partsOverlap(notched, insert)) throw new Error('A piece pushed into remaining solid wood was not detected as a collision.');
 
+const horizontalTrim = buildStockGeometry(
+  { dims: [24, 4, 4], color: 0xffffff },
+  [{ type: 'trimPlane', normal: [0, 0, 1], constant: 0, keepSign: -1 }],
+);
+horizontalTrim.computeBoundingBox();
+if (horizontalTrim.boundingBox.max.z > 0.03 || horizontalTrim.boundingBox.min.z > -1.9) {
+  throw new Error(`Horizontal trim plane produced unexpected bounds: ${horizontalTrim.boundingBox.min.z} to ${horizontalTrim.boundingBox.max.z}`);
+}
+
+const n = new THREE.Vector3(-1, 0, 1).normalize();
+const slopedTrim = buildStockGeometry(
+  { dims: [24, 4, 8], color: 0xffffff },
+  [{ type: 'trimPlane', normal: n.toArray(), constant: 0, keepSign: -1 }],
+);
+const positions = slopedTrim.getAttribute('position');
+for (let i = 0; i < positions.count; i += 1) {
+  const point = new THREE.Vector3().fromBufferAttribute(positions, i);
+  if (-n.dot(point) < -0.04) throw new Error('Sloped trim retained a vertex on the discarded side of the plane.');
+}
+
 const wall = createWallPlan({
   length: 120,
   leftHeight: 96,
@@ -49,4 +69,4 @@ if (!wall.pieces.some(piece => piece.spec.operations?.some(operation => operatio
   throw new Error('Sloped wall did not generate angled stud end cuts.');
 }
 
-console.log(`Smoke tests passed: ${notchedGeometry.attributes.position.count} notched vertices, ${wall.pieces.length} wall pieces.`);
+console.log(`Smoke tests passed: ${notchedGeometry.attributes.position.count} notched vertices, trim planes verified, ${wall.pieces.length} wall pieces.`);
