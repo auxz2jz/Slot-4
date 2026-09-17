@@ -18,7 +18,7 @@ Each placeable object should have:
 - local collision center
 - optional mesh/profile metadata
 
-Current definitions:
+Current smoker definitions:
 
 | Type | Dimensions |
 | --- | --- |
@@ -26,14 +26,40 @@ Current definitions:
 | `firebrick` | 9 × 4.5 × 2.5 in |
 | `lid` | 25.5 × 19.5 × 5.5 in envelope |
 
+### ConstructionMaterialDefinition
+
+Reusable stock materials are separate from placed instances. The current catalog lives in `src/model/material-catalog.js` and includes:
+
+- dimensional lumber with nominal names and actual finished cross-sections
+- common stock lengths
+- common precut stud lengths
+- 4 × 8 sheet goods with material-specific thicknesses
+
+Lumber definitions distinguish between nominal size (for example `2 × 4`) and actual dimensions (for example `1.5 × 3.5 in`).
+
+### StockUsage
+
+A placed construction material may retain information about the stock piece it came from.
+
+For lumber this currently includes:
+
+- stock length
+- cut length
+- resulting offcut (`stockLength - cutLength`)
+
+This is intentionally part of the domain model rather than only the UI so future features can generate material takeoffs, cut lists, and waste estimates without changing existing project files.
+
+Future sheet-cutting support should follow the same idea by retaining source sheet width/length and the rectangular piece removed from it.
+
 ### PlacedPart
 
 Each placed object should store:
 
-- unique id
+- stable unique id (UUID)
 - type
 - position `(x, y, z)` in inches
 - rotation `(rx, ry, rz)` or quaternion
+- material/source-stock metadata when applicable
 - selection state only at runtime
 - no permanent parent/attachment just because two faces touch
 
@@ -81,6 +107,8 @@ Current rule:
 A future Kotlin project can map these concepts approximately as:
 
 - `PartDefinition` → Kotlin data class
+- `ConstructionMaterialDefinition` → Kotlin data class/catalog
+- `StockUsage` → Kotlin data class
 - `PlacedPart` → Kotlin data class with UUID
 - editor/project state → ViewModel + StateFlow
 - menus/settings → Jetpack Compose
@@ -96,15 +124,17 @@ The key design constraint is to avoid putting domain rules directly inside Compo
 The current working prototype can be split incrementally into:
 
 1. `model/part-definitions.js`
-2. `model/project-state.js`
-3. `geometry/obb.js`
-4. `geometry/collision.js`
-5. `editor/snapping.js`
-6. `editor/mortar.js`
-7. `editor/selection.js`
-8. `render/three-scene.js`
-9. `ui/controls.js`
-10. `io/layout-json.js`
-11. `io/stl-export.js`
+2. `model/material-catalog.js` (started)
+3. `model/project-state.js`
+4. `geometry/obb.js`
+5. `geometry/collision.js`
+6. `editor/snapping.js`
+7. `editor/mortar.js`
+8. `editor/selection.js`
+9. `render/three-scene.js`
+10. `ui/controls.js`
+11. `io/layout-json.js`
+12. `io/stl-export.js`
+13. `io/material-takeoff.js`
 
 Do this incrementally so the working prototype stays usable.
