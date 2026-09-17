@@ -73,15 +73,18 @@ export function resolveStockPart(spec) {
   if (spec.family === 'sheet') {
     const item = getSheet(spec.itemId);
     const thickness = Number(spec.thickness ?? item.thicknesses[0]);
+    const cutLength = Math.max(0.125, Math.min(Number(spec.cutLength ?? item.size[0]), item.size[0]));
+    const cutWidth = Math.max(0.125, Math.min(Number(spec.cutWidth ?? item.size[1]), item.size[1]));
     return {
       kind: 'construction',
       family: 'sheet',
       itemId: item.id,
-      label: `${item.label} 4 × 8 × ${formatInches(thickness)}`,
-      dims: [item.size[0], item.size[1], thickness],
+      label: `${item.label} — ${formatInches(cutLength)} × ${formatInches(cutWidth)} × ${formatInches(thickness)}`,
+      dims: [cutLength, cutWidth, thickness],
       stockLength: item.size[0],
-      cutLength: item.size[0],
+      cutLength,
       stockWidth: item.size[1],
+      cutWidth,
       thickness,
       color: item.id === 'drywall' ? 0xe8e5dc : item.id === 'foam-board' ? 0xd9e6ef : 0xc8a978,
     };
@@ -89,7 +92,7 @@ export function resolveStockPart(spec) {
 
   const item = getLumber(spec.itemId);
   const stockLength = Number(spec.stockLength ?? item.lengths[0].value);
-  const cutLength = Number(spec.cutLength ?? stockLength);
+  const cutLength = Math.max(0.125, Number(spec.cutLength ?? stockLength));
   const [thickness, width] = item.actual;
   return {
     kind: 'construction',
