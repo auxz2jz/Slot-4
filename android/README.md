@@ -17,11 +17,13 @@ The 3D renderer, solid geometry/CSG, exact collision, save/load, and undo/redo a
 
 ## Toolchain
 
-- Android Gradle Plugin 9.4.0
+- Android Gradle Plugin 9.4.0 with built-in Kotlin support
 - Gradle 9.6.0 target
 - JDK 17
-- Kotlin 2.3.21
+- Kotlin/Compose plugin 2.3.21 for the JVM modules and Compose compiler
 - Jetpack Compose BOM 2026.08.00
 - minSdk 26 / targetSdk 37
 
 Open the `android` folder as a project in Android Studio. The Gradle wrapper binary is intentionally not committed in this bootstrap; Android Studio can configure/generate the wrapper during the first local setup, after which we can commit the generated wrapper as a normal checkpoint.
+
+The branch CI uses an externally provisioned Gradle 9.6 installation and never commits generated files back into the repository.

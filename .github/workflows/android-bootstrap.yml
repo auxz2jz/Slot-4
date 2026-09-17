@@ -1,0 +1,36 @@
+name: Android bootstrap check
+
+on:
+  push:
+    branches: [android-native-bootstrap]
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-bootstrap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install API 37 platform
+        run: sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Run model and construction tests
+        run: gradle -p android :core-model:test :construction:test --stacktrace
+      - name: Assemble debug app
+        run: gradle -p android :app:assembleDebug --stacktrace
