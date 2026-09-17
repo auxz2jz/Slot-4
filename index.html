@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#e7e9ec">
+  <title>Smoker 3D Builder</title>
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+  <header class="toolbar">
+    <button id="addCmu">+ Gray cinder block</button>
+    <button id="addFirebrick">+ Yellow firebrick</button>
+    <button id="addLid">+ Lid</button>
+    <span class="separator"></span>
+    <button id="moveMode" class="active">Move</button>
+    <button id="rotateMode">Rotate</button>
+    <button id="duplicate">Duplicate</button>
+    <button id="deletePart">Delete</button>
+    <span class="separator"></span>
+    <button id="topView">Top</button>
+    <button id="frontView">Front</button>
+    <button id="isoView">Iso</button>
+    <button id="frameAll">Frame all</button>
+    <button id="settingsButton">⚙ Settings</button>
+  </header>
+
+  <main class="workspace">
+    <canvas id="view" aria-label="3D smoker builder"></canvas>
+    <div class="hint">1 finger / left drag = orbit · 2 fingers = orbit + pinch zoom · tap a part = select</div>
+
+    <aside id="settingsPanel" class="settings hidden">
+      <div class="settings-head">
+        <h1>Builder settings</h1>
+        <button id="closeSettings">Close</button>
+      </div>
+      <p>This modular web project is the long-term source tree. Advanced behavior from the standalone prototype is being moved here incrementally without changing the project data model.</p>
+      <label><input id="translationSnap" type="checkbox" checked> 0.5-inch translation snap</label>
+      <label>Rotation snap
+        <select id="rotationSnap">
+          <option value="1">1°</option>
+          <option value="5">5°</option>
+          <option value="15" selected>15°</option>
+          <option value="45">45°</option>
+          <option value="90">90°</option>
+        </select>
+      </label>
+      <div id="selectionInfo">Nothing selected.</div>
+    </aside>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
