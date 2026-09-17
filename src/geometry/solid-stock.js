@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
+import { Brush, Evaluator, SUBTRACTION, INTERSECTION } from 'three-bvh-csg';
 import { MeshBVH } from 'three-mesh-bvh';
 
 const evaluator = new Evaluator();
@@ -18,6 +18,14 @@ function latestEndCut(operations, end) {
   return matches.at(-1) || { miter: 0, bevel: 0 };
 }
 
+function finishGeometry(geometry) {
+  geometry.deleteAttribute('uv');
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function makeCompoundPrism(length, width, thickness, operations = []) {
   const a = latestEndCut(operations, 'A');
   const b = latestEndCut(operations, 'B');
@@ -31,35 +39,25 @@ function makeCompoundPrism(length, width, thickness, operations = []) {
   const positions = [];
 
   for (const z of zs) {
-    for (const y of ys) {
-      positions.push(-length / 2 + y * ta + z * tba, y, z);
-    }
+    for (const y of ys) positions.push(-length / 2 + y * ta + z * tba, y, z);
   }
   for (const z of zs) {
-    for (const y of ys) {
-      positions.push(length / 2 + y * tb + z * tbb, y, z);
-    }
+    for (const y of ys) positions.push(length / 2 + y * tb + z * tbb, y, z);
   }
 
-  // Vertex order after the loops:
-  // 0 A(-y,-z), 1 A(+y,-z), 2 A(-y,+z), 3 A(+y,+z)
-  // 4 B(-y,-z), 5 B(+y,-z), 6 B(-y,+z), 7 B(+y,+z)
   const indices = [
-    0, 2, 3, 0, 3, 1, // End A
-    4, 5, 7, 4, 7, 6, // End B
-    0, 1, 5, 0, 5, 4, // Bottom
-    2, 6, 7, 2, 7, 3, // Top
-    0, 4, 6, 0, 6, 2, // -Y side
-    1, 3, 7, 1, 7, 5, // +Y side
+    0, 2, 3, 0, 3, 1,
+    4, 5, 7, 4, 7, 6,
+    0, 1, 5, 0, 5, 4,
+    2, 6, 7, 2, 7, 3,
+    0, 4, 6, 0, 6, 2,
+    1, 3, 7, 1, 7, 5,
   ];
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
+  return finishGeometry(geometry);
 }
 
 function notchCutterGeometry(notch, length, width, thickness) {
@@ -102,23 +100,44 @@ function notchCutterGeometry(notch, length, width, thickness) {
   return geometry;
 }
 
-function subtractNotch(baseGeometry, notch, dims) {
-  const [length, width, thickness] = dims;
-  const base = new Brush(baseGeometry);
-  const cutterGeometry = notchCutterGeometry(notch, length, width, thickness);
-  const cutter = new Brush(cutterGeometry);
-  base.updateMatrixWorld(true);
-  cutter.updateMatrixWorld(true);
-  const result = evaluator.evaluate(base, cutter, SUBTRACTION);
-  const geometry = result.geometry.clone();
+function trimHalfSpaceGeometry(trim, dims) {
+  const normal = new THREE.Vector3().fromArray(trim.normal || [0, 0, 1]);
+  if (normal.lengthSq() < 1e-8) normal.set(0, 0, 1);
+  normal.normalize();
+  const constant = Number(trim.constant) || 0;
+  const keepSign = Number(trim.keepSign) < 0 ? -1 : 1;
+  const extent = Math.max(1200, Math.max(...dims.map(Math.abs)) * 24);
+  const planePoint = normal.clone().multiplyScalar(-constant);
+  const keepDirection = normal.clone().multiplyScalar(keepSign);
+  const center = planePoint.clone().addScaledVector(keepDirection, extent / 2);
+
+  const geometry = new THREE.BoxGeometry(extent, extent, extent);
   geometry.deleteAttribute('uv');
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), keepDirection);
+  geometry.applyQuaternion(quaternion);
+  geometry.translate(center.x, center.y, center.z);
+  return geometry;
+}
+
+function evaluateCsg(baseGeometry, toolGeometry, operation) {
+  const base = new Brush(baseGeometry);
+  const tool = new Brush(toolGeometry);
+  base.updateMatrixWorld(true);
+  tool.updateMatrixWorld(true);
+  const result = evaluator.evaluate(base, tool, operation);
+  const geometry = finishGeometry(result.geometry.clone());
   baseGeometry.dispose();
-  cutterGeometry.dispose();
+  toolGeometry.dispose();
   result.geometry.dispose();
   return geometry;
+}
+
+function subtractNotch(baseGeometry, notch, dims) {
+  return evaluateCsg(baseGeometry, notchCutterGeometry(notch, ...dims), SUBTRACTION);
+}
+
+function trimToPlane(baseGeometry, trim, dims) {
+  return evaluateCsg(baseGeometry, trimHalfSpaceGeometry(trim, dims), INTERSECTION);
 }
 
 export function buildStockGeometry(definition, operations = []) {
@@ -126,6 +145,7 @@ export function buildStockGeometry(definition, operations = []) {
   let geometry = makeCompoundPrism(...dims, operations);
   for (const operation of operations || []) {
     if (operation.type === 'notch') geometry = subtractNotch(geometry, operation, dims);
+    if (operation.type === 'trimPlane') geometry = trimToPlane(geometry, operation, dims);
   }
   geometry.boundsTree = new MeshBVH(geometry);
   return geometry;
@@ -150,12 +170,14 @@ export function summarizeOperations(operations = []) {
   const a = latestEndCut(operations, 'A');
   const b = latestEndCut(operations, 'B');
   const notches = operations.filter(operation => operation.type === 'notch');
+  const trimPlanes = operations.filter(operation => operation.type === 'trimPlane');
   return {
     startMiter: Number(a.miter) || 0,
     startBevel: Number(a.bevel) || 0,
     endMiter: Number(b.miter) || 0,
     endBevel: Number(b.bevel) || 0,
     notches,
+    trimPlanes,
   };
 }
 
